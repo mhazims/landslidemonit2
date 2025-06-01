@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Landslide Monitoring - Welcome</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: url('/mnt/data/df7c7f1b-1a32-4cf2-9e6d-f2ff08d55cf6.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #1e3a5f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+
+    .overlay {
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 40px;
+      border-radius: 16px;
+      text-align: center;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    h1 {
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    p.language {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-weight: bold;
+      color: #333;
+    }
+
+    .btn-next {
+      margin-top: 30px;
+      background-color: #1e3a5f;
+      color: white;
+      padding: 12px 30px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .btn-next:hover {
+      background-color: #3a6db3;
+    }
+  </style>
+</head>
+<body>
+  <p class="language">English</p>
+  <div class="overlay">
+    <h1>WELCOME TO<br>LANDSLIDE MONITORING</h1>
+    <button class="btn-next" onclick="location.href='monitoring.html'">NEXT</button>
+  </div>
+</body>
+</html>
