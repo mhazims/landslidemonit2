@@ -163,7 +163,7 @@
 
     function connectWebSocket() {
       // Ganti ke ws://hostname:8080 agar sesuai server WebSocket Anda
-      const url = `ws://${window.location.hostname}:8080`;
+      const socket = new WebSocket("wss://landslidemonit.vercel.app:8080/");
       ws = new WebSocket(url);
 
       ws.onopen = () => {
