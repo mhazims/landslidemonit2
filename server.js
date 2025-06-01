@@ -1,41 +1,55 @@
 const express = require('express');
-const mqtt = require('mqtt');
-const WebSocket = require('ws');
 const http = require('http');
+const mqtt = require('mqtt');
+const { Server } = require('socket.io');
 
-// === Setup Express + Web Server ===
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const io = new Server(server);
 
-// === Ganti sesuai dengan CloudAMQP URL kamu ===
-const mqttUrl = 'amqps://tezvkbwf:u7nB-MhNP81KdhFxpKk7CTbhxbnD9-r8@collie.lmq.cloudamqp.com/tezvkbwf'; // <- ubah ini
+const PORT = process.env.PORT || 3000;
 
-const mqttClient = mqtt.connect(mqttUrl);
+// MQTT HiveMQ Cloud settings
+const MQTT_BROKER = 'wss://c39f18fd98e346cbb96d4081af10c3f5.s1.eu.hivemq.cloud:8884/mqtt'; // WSS + path /mqtt
+const MQTT_USERNAME = 'oktatata';
+const MQTT_PASSWORD = 'jyHbAUSS37_hpgR';
+const MQTT_TOPIC = 'test/topic';
 
-// === Ketika MQTT berhasil terkoneksi ===
-mqttClient.on('connect', () => {
-  console.log('✅ Terhubung ke MQTT broker');
-  mqttClient.subscribe('landslide/+/+'); // <- sesuaikan topikmu
+// Root route
+app.get('/', (req, res) => {
+  res.send('Node.js app is running!');
 });
 
-// === Terima pesan dari MQTT ===
-mqttClient.on('message', (topic, message) => {
-  console.log(`📥 MQTT message from ${topic}: ${message.toString()}`);
+// Connect MQTT client with TLS and auth
+const client = mqtt.connect(MQTT_BROKER, {
+  username: MQTT_USERNAME,
+  password: MQTT_PASSWORD,
+  rejectUnauthorized: false,  // Kalau SSL self-signed, bisa di set false, tapi kalau cloud resmi biasanya aman pakai true/default
+});
 
-  // Kirim ke semua client WebSocket
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message.toString());
+client.on('connect', () => {
+  console.log('Connected to HiveMQ Cloud MQTT broker');
+  client.subscribe(MQTT_TOPIC, (err) => {
+    if (!err) {
+      console.log(`Subscribed to topic: ${MQTT_TOPIC}`);
+    } else {
+      console.error('Subscribe error:', err);
     }
   });
 });
 
-// === Serve file statis (HTML, CSS, JS frontend) ===
-app.use(express.static(__dirname));
+client.on('error', (err) => {
+  console.error('MQTT Client Error:', err);
+});
 
-// === Jalankan server ===
-const PORT = 3000;
+client.on('message', (topic, message) => {
+  const msg = message.toString();
+  console.log(`Message received on topic ${topic}: ${msg}`);
+
+  // Emit message to all connected Socket.IO clients
+  io.emit('mqtt-message', { topic, message: msg });
+});
+
 server.listen(PORT, () => {
-  console.log(`🚀 Server berjalan di http://localhost:${PORT}`);
+  console.log(`Server listening on port ${PORT}`);
 });
