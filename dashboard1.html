@@ -1,13 +1,14 @@
+<!-- public/dashboard1.html -->
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Node 18889 Dashboard</title>
+  <title>Dashboard Node 1</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
   <style>
-    /* (styling sama seperti yang Anda berikan) */
     body {
       font-family: 'Inter', sans-serif;
       background: #f4f6f9;
@@ -72,7 +73,7 @@
   </style>
 </head>
 <body>
-  <div class="header">NODE 1 DASHBOARD</div>
+  <div class="header">DASHBOARD NODE 1</div>
 
   <div class="dashboard">
     <div class="card">
@@ -98,8 +99,8 @@
   </div>
 
   <div class="btn-container">
-    <button onclick="window.history.back()">BACK</button>
-    <button onclick="alert('Menampilkan hasil')">RESULT</button>
+    <button onclick="window.history.back()">KEMBALI</button>
+    <button onclick="alert('Menampilkan hasil')">HASIL</button>
   </div>
 
   <script>
@@ -150,57 +151,33 @@
       return str.charAt(0).toUpperCase() + str.slice(1);
     }
 
-    // Sensor data state
-    const sensorData = {
-      curahHujan: 0,
-      kelembaban: 0,
-      getaran: 0,
-      kemiringan: 0,
-      suhu: 0,
-    };
+    // Koneksi ke Socket.IO
+    const socket = io();
 
-    let ws;
+    socket.on('connect', () => {
+      console.log('Terhubung ke Socket.IO');
+    });
 
-    function connectWebSocket() {
-      // Ganti ke ws://hostname:8080 agar sesuai server WebSocket Anda
-      const socket = new WebSocket("wss://landslidemonit.vercel.app:8080/");
-      ws = new WebSocket(url);
+    socket.on('mqtt-message', (data) => {
+      console.log('Pesan MQTT:', data);
 
-      ws.onopen = () => {
-        console.log('WebSocket connected');
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.node === 'node1' && data.sensor && data.value !== undefined) {
-            sensorData[data.sensor] = data.value;
-
-            switch(data.sensor) {
-              case 'curahHujan': updateGauge('curahHujan', data.value); break;
-              case 'kelembaban': updateGauge('kelembaban', data.value); break;
-              case 'getaran': updateGauge('getaran', data.value); break;
-              case 'kemiringan': updateGauge('kemiringan', data.value); break;
-              case 'suhu': updateSuhu(data.value); break;
-              default: console.log('Sensor tidak dikenal:', data.sensor);
-            }
+      const { topic, message } = data;
+      try {
+        const parsed = JSON.parse(message);
+        if (parsed.node === 'node1' && parsed.sensor && parsed.value !== undefined) {
+          switch(parsed.sensor) {
+            case 'curahHujan': updateGauge('curahHujan', parsed.value); break;
+            case 'kelembaban': updateGauge('kelembaban', parsed.value); break;
+            case 'getaran': updateGauge('getaran', parsed.value); break;
+            case 'kemiringan': updateGauge('kemiringan', parsed.value); break;
+            case 'suhu': updateSuhu(parsed.value); break;
+            default: console.log('Sensor tidak dikenal:', parsed.sensor);
           }
-        } catch (err) {
-          console.error('Gagal parsing data:', event.data);
         }
-      };
-
-      ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
-      };
-
-      ws.onclose = (event) => {
-        console.log('WebSocket connection closed. Reconnecting in 3 seconds...', event.reason);
-        setTimeout(connectWebSocket, 3000);
-      };
-    }
-
-    connectWebSocket();
+      } catch (err) {
+        console.error('Gagal mem-parsing pesan MQTT:', message);
+      }
+    });
   </script>
 </body>
 </html>

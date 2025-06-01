@@ -1,55 +1,60 @@
+// server.js
 const express = require('express');
 const http = require('http');
 const mqtt = require('mqtt');
 const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// Konfigurasi
 const PORT = process.env.PORT || 3000;
-
-// MQTT HiveMQ Cloud settings
-const MQTT_BROKER = 'wss://c39f18fd98e346cbb96d4081af10c3f5.s1.eu.hivemq.cloud:8884/mqtt'; // WSS + path /mqtt
+const MQTT_BROKER = 'wss://c39f18fd98e346cbb96d4081af10c3f5.s1.eu.hivemq.cloud:8884/mqtt';
 const MQTT_USERNAME = 'oktatata';
 const MQTT_PASSWORD = 'jyHbAUSS37_hpgR';
 const MQTT_TOPIC = 'test/topic';
 
-// Root route
+// Middleware untuk menyajikan file statis
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Rute utama
 app.get('/', (req, res) => {
-  res.send('Node.js app is running!');
+  res.sendFile(path.join(__dirname, 'public', 'dashboard1.html'));
 });
 
-// Connect MQTT client with TLS and auth
-const client = mqtt.connect(MQTT_BROKER, {
+// Koneksi ke broker MQTT
+const mqttClient = mqtt.connect(MQTT_BROKER, {
   username: MQTT_USERNAME,
   password: MQTT_PASSWORD,
-  rejectUnauthorized: false,  // Kalau SSL self-signed, bisa di set false, tapi kalau cloud resmi biasanya aman pakai true/default
+  rejectUnauthorized: false,
 });
 
-client.on('connect', () => {
-  console.log('Connected to HiveMQ Cloud MQTT broker');
-  client.subscribe(MQTT_TOPIC, (err) => {
+mqttClient.on('connect', () => {
+  console.log('Terhubung ke broker MQTT HiveMQ Cloud');
+  mqttClient.subscribe(MQTT_TOPIC, (err) => {
     if (!err) {
-      console.log(`Subscribed to topic: ${MQTT_TOPIC}`);
+      console.log(`Berlangganan ke topik: ${MQTT_TOPIC}`);
     } else {
-      console.error('Subscribe error:', err);
+      console.error('Kesalahan saat berlangganan:', err);
     }
   });
 });
 
-client.on('error', (err) => {
-  console.error('MQTT Client Error:', err);
+mqttClient.on('error', (err) => {
+  console.error('Kesalahan MQTT:', err);
 });
 
-client.on('message', (topic, message) => {
+mqttClient.on('message', (topic, message) => {
   const msg = message.toString();
-  console.log(`Message received on topic ${topic}: ${msg}`);
+  console.log(`Pesan diterima pada topik ${topic}: ${msg}`);
 
-  // Emit message to all connected Socket.IO clients
+  // Kirim pesan ke semua klien yang terhubung melalui Socket.IO
   io.emit('mqtt-message', { topic, message: msg });
 });
 
+// Jalankan server
 server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`Server berjalan pada port ${PORT}`);
 });
